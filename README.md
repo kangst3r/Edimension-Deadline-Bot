@@ -42,7 +42,7 @@ The workflow runs automatically at **8:00 AM, 1:00 PM, and 8:00 PM SGT** every d
 
 ## Privacy
 
-Your eDimension iCal URL contains a personal authentication token. Keep your forked repo **private** so others can't access your calendar data.
+Your iCal URL is stored as a **GitHub Secret** and is never exposed in the repository. You can keep your fork private if you don't want your workflow run logs visible to others, but it is not a security requirement.
 
 ## Contributing
 
