@@ -1,14 +1,14 @@
 # eDimension Deadline Bot
 
-Telegram bot that sends upcoming deadline reminders from your eDimension calendar, runs free on GitHub Actions.
+A Telegram bot that sends you deadline reminders from your eDimension calendar. Runs for free on GitHub Actions, no server required.
 
 ## Features
 
 - 14-day lookahead window
-- Colour-coded urgency (🔴 ≤3 days, 🟠 ≤7 days, 🟢 ≤14 days)
-- Events sorted by due date ascending
-- Runs 3× daily automatically
-- No server needed — powered entirely by GitHub Actions
+- Colour-coded urgency (🔴 3 days or less, 🟠 7 days or less, 🟢 14 days or less)
+- Events sorted by due date
+- Runs 3 times a day automatically
+- Powered entirely by GitHub Actions, no server needed
 
 ## Prerequisites
 
@@ -17,24 +17,24 @@ Telegram bot that sends upcoming deadline reminders from your eDimension calenda
 
 ## Setup
 
-1. **Fork this repo**, then go to your fork's **Settings → General** and set the visibility to **Private**.
+1. **Fork this repo**, then go to your fork's **Settings > General** and set the visibility to **Private**.
 
 2. **Create a Telegram bot** via [@BotFather](https://t.me/BotFather), follow the prompts, and copy the bot token it gives you.
 
-3. **Get your chat ID** — start a chat with your new bot, send it any message, then visit:
+3. **Get your chat ID** by starting a chat with your new bot and sending it any message, then visiting:
    ```
    https://api.telegram.org/bot<YOUR_TOKEN>/getUpdates
    ```
-   Find `"chat"` → `"id"` in the JSON response and copy that number.
+   Look for `"chat"` then `"id"` in the JSON response and copy that number.
 
-4. **Get your eDimension iCal URL** — log in to eDimension, go to **Calendar**, click the **gear icon** (top right) → **Get External Calendar Link**, and copy the `.ics` URL.
+4. **Get your eDimension iCal URL** by logging into eDimension, going to **Calendar**, clicking the **gear icon** (top right), selecting **Get External Calendar Link**, and copying the `.ics` URL.
 
-5. **Add GitHub Secrets** — in your forked repo go to **Settings → Secrets and variables → Actions → New repository secret** and add:
-   - `BOT_TOKEN` — the token from BotFather
-   - `CHAT_ID` — the chat ID from step 3
-   - `ICAL_URL` — the `.ics` URL from step 4
+5. **Add GitHub Secrets** by going to **Settings > Secrets and variables > Actions > New repository secret** in your forked repo and adding:
+   - `BOT_TOKEN`: the token from BotFather
+   - `CHAT_ID`: the chat ID from step 3
+   - `ICAL_URL`: the `.ics` URL from step 4
 
-6. **Test it** — go to the **Actions** tab → **Deadline Notifier** → **Run workflow**. Check your Telegram for a message.
+6. **Test it** by going to the **Actions** tab, clicking **Deadline Notifier**, then **Run workflow**. You should get a message on Telegram shortly after.
 
 ## Schedule
 
@@ -42,7 +42,7 @@ The workflow runs automatically at **8:00 AM, 1:00 PM, and 8:00 PM SGT** every d
 
 ## Privacy
 
-Your eDimension iCal URL contains a personal authentication token. Keep your forked repo **private** to prevent others from accessing your calendar data.
+Your eDimension iCal URL contains a personal authentication token. Keep your forked repo **private** so others can't access your calendar data.
 
 ## Contributing
 
