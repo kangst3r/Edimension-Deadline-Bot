@@ -36,6 +36,10 @@ A Telegram bot that sends you deadline reminders from your eDimension calendar. 
 
 6. **Test it** by going to the **Actions** tab, clicking **Deadline Notifier**, then **Run workflow**. You should get a message on Telegram shortly after.
 
+## After Forking
+
+GitHub automatically disables scheduled workflows on forked repos. Once you have added your secrets, go to the Actions tab in your forked repo, select Deadline Notifier, and click Enable workflow. Then run it manually once via Run workflow to confirm everything is working before the schedule kicks in.
+
 ## Schedule
 
 The workflow runs automatically at **8:00 AM, 1:00 PM, and 8:00 PM SGT** every day (UTC 0:00, 5:00, 12:00).
@@ -43,7 +47,3 @@ The workflow runs automatically at **8:00 AM, 1:00 PM, and 8:00 PM SGT** every d
 ## Privacy
 
 Your iCal URL is stored as a **GitHub Secret** and is never exposed in the repository. You can keep your fork private if you don't want your workflow run logs visible to others, but it is not a security requirement.
-
-## Contributing
-
-PRs welcome.
