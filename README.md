@@ -42,8 +42,10 @@ GitHub automatically disables scheduled workflows on forked repos. Once you have
 
 ## Schedule
 
-The workflow runs automatically at **8:00 AM, 1:00 PM, and 8:00 PM SGT** every day (UTC 0:00, 5:00, 12:00).
+The workflow runs automatically at **8:00 AM, 1:00 PM, and 8:00 PM SGT** every day (UTC 0:00, 5:00, 12:00). Note that GitHub may delay scheduled runs by up to 3.5 hours during peak times. 
+
+**IMPORTANT**: GitHub disables scheduled workflows on repos with no commit activity for 60 days. To keep the bot running, make any small commit to your repo at least once every 2 months (e.g. editing a line in this README). You can re-enable the workflow manually in the Actions tab if it gets disabled.
 
 ## Privacy
 
-Your iCal URL is stored as a **GitHub Secret** and is never exposed in the repository. You can keep your fork private if you don't want your workflow run logs visible to others, but it is not a security requirement.
+Your `BOT_TOKEN`, `CHAT_ID`, `ICAL_URL` are stored as a **GitHub Secrets** and are never exposed in the repository. You can keep your fork private if you don't want your workflow run logs visible to others, but it is not a security requirement.
