@@ -1,121 +1,85 @@
-import os
-import re
-import urllib.request
-import urllib.parse
-import json
-from datetime import datetime, timedelta, timezone
+import html, os, re, urllib.request, urllib.parse
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-ICAL_URL = os.environ["ICAL_URL"]
-BOT_TOKEN = os.environ["BOT_TOKEN"]
-CHAT_ID = os.environ["CHAT_ID"]
+BOT_TOKEN  = os.environ["BOT_TOKEN"]
+CHAT_ID    = os.environ["CHAT_ID"]
+ICAL_URL   = os.environ["ICAL_URL"]
+SGT        = ZoneInfo("Asia/Singapore")
+DAYS_AHEAD = 14
 
-SGT = ZoneInfo("Asia/Singapore")
-
-
-def fetch_ical(url):
-    with urllib.request.urlopen(url) as resp:
-        return resp.read().decode("utf-8", errors="replace")
-
-
-def unfold(text):
-    # Join lines that are continued with a leading space or tab
-    return re.sub(r"\r?\n[ \t]", "", text)
-
+def fetch_ical():
+    with urllib.request.urlopen(ICAL_URL) as r:
+        return r.read().decode("utf-8")
 
 def parse_events(text):
-    text = unfold(text)
+    text = re.sub(r'\r?\n[ \t]', '', text)
     events = []
-    for block in re.findall(r"BEGIN:VEVENT(.*?)END:VEVENT", text, re.DOTALL):
-        summary_m = re.search(r"^SUMMARY[^:]*:(.*)", block, re.MULTILINE)
-        dtstart_m = re.search(r"^(DTSTART[^:]*:(.*))", block, re.MULTILINE)
-        if not summary_m or not dtstart_m:
+    for block in re.findall(r'BEGIN:VEVENT(.*?)END:VEVENT', text, re.DOTALL):
+        def get(key):
+            m = re.search(rf'^{key}(?:;[^:]+)?:(.*)', block, re.MULTILINE)
+            return m.group(1).strip() if m else ""
+        summary    = get("SUMMARY") \
+                         .replace("\\,", ",") \
+                         .replace("\\;", ";") \
+                         .replace("\\\\", "\\") \
+                         .replace("\\n", " ")
+        dtraw      = get("DTSTART").replace("Z", "")
+        categories = get("CATEGORIES")
+        if not summary or not dtraw:
             continue
-        summary = summary_m.group(1).strip()
-        raw_dtstart = dtstart_m.group(1).strip()
-        dt = parse_dtstart(raw_dtstart)
-        if dt is None:
+        try:
+            due = datetime.strptime(dtraw, "%Y%m%dT%H%M%S").replace(tzinfo=SGT)
+        except ValueError:
             continue
-        events.append({"summary": summary, "dtstart": dt})
+        events.append({"summary": summary, "due": due, "course": categories})
     return events
 
+def urgency(due, now):
+    days = (due - now).total_seconds() / 86400
+    if days <= 3:   return 0
+    elif days <= 7: return 1
+    else:           return 2
 
-def parse_dtstart(raw):
-    # Matches both:
-    #   DTSTART;TZID=Asia/Singapore:20260410T090000
-    #   DTSTART:20260410T090000Z
-    m = re.match(r"DTSTART(?:;TZID=([^:]+))?:(\d{8}T\d{6})(Z?)", raw)
-    if not m:
-        return None
-    tzid, dt_str, zulu = m.group(1), m.group(2), m.group(3)
-    naive = datetime.strptime(dt_str, "%Y%m%dT%H%M%S")
-    if zulu == "Z":
-        dt = naive.replace(tzinfo=timezone.utc).astimezone(SGT)
-    elif tzid:
-        dt = naive.replace(tzinfo=ZoneInfo(tzid)).astimezone(SGT)
-    else:
-        dt = naive.replace(tzinfo=SGT)
-    return dt
+TIERS = [
+    ("🔴", "Urgent"),
+    ("🟠", "This week"),
+    ("🟢", "Coming up"),
+]
 
-
-def urgency_emoji(days_remaining):
-    if days_remaining <= 3:
-        return "🔴"
-    if days_remaining <= 7:
-        return "🟠"
-    return "🟢"
-
-
-def format_event(event, now_sgt):
-    dt = event["dtstart"]
-    days_remaining = (dt.date() - now_sgt.date()).days
-    emoji = urgency_emoji(days_remaining)
-    due_str = dt.strftime("%a %-d %b, %I:%M %p").replace(" 0", " ")
-    return f"{emoji} {event['summary']}\n  ⏰ {due_str}"
-
-
-def send_telegram(token, chat_id, text):
-    url = f"https://api.telegram.org/bot{token}/sendMessage"
-    payload = json.dumps({
-        "chat_id": chat_id,
-        "text": text,
-        "parse_mode": "Markdown",
+def send_telegram(msg):
+    data = urllib.parse.urlencode({
+        "chat_id": CHAT_ID, "text": msg, "parse_mode": "HTML"
     }).encode()
-    req = urllib.request.Request(
-        url,
-        data=payload,
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    with urllib.request.urlopen(req) as resp:
-        resp.read()
-
+    urllib.request.urlopen(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", data)
 
 def main():
-    now_sgt = datetime.now(tz=SGT)
-    window_end = now_sgt + timedelta(days=14)
+    now    = datetime.now(SGT)
+    cutoff = now + timedelta(days=DAYS_AHEAD)
 
-    raw = fetch_ical(ICAL_URL)
-    events = parse_events(raw)
-
-    upcoming = [
-        e for e in events
-        if now_sgt <= e["dtstart"] <= window_end
-    ]
+    events   = parse_events(fetch_ical())
+    upcoming = [e for e in events if now <= e["due"] <= cutoff]
+    upcoming.sort(key=lambda e: e["due"])
 
     if not upcoming:
         return
 
-    upcoming.sort(key=lambda e: e["dtstart"])
+    # Group into urgency tiers
+    buckets = [[], [], []]
+    for e in upcoming:
+        buckets[urgency(e["due"], now)].append(e)
 
-    lines = ["📚 *Upcoming Deadlines — next 14 days*", ""]
-    for event in upcoming:
-        lines.append(format_event(event, now_sgt))
-    lines.append("")
-    lines.append("🔴 ≤3 days  🟠 ≤7 days  🟢 ≤14 days")
+    lines = ["📚 <b>Upcoming Deadlines — next 14 days</b>"]
+    for (icon, label), bucket in zip(TIERS, buckets):
+        if not bucket:
+            continue
+        lines.append(f"\n{icon} <b>{label}</b>")
+        for e in bucket:
+            due_str = e["due"].strftime("%a %d %b, %I:%M %p")
+            course  = f" ({html.escape(e['course'])})" if e["course"] else ""
+            lines.append(f"• {html.escape(e['summary'])}{course}\n  {due_str}")
 
-    send_telegram(BOT_TOKEN, CHAT_ID, "\n".join(lines))
-
+    send_telegram("\n".join(lines))
 
 if __name__ == "__main__":
     main()
