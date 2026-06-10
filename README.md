@@ -8,7 +8,7 @@ A Telegram bot that sends you deadline reminders from your eDimension calendar. 
 - Colour-coded urgency (🔴 3 days or less, 🟠 7 days or less, 🟢 14 days or less)
 - Events sorted by due date
 - Runs 3 times a day automatically
-- Powered entirely by GitHub Actions, no server needed
+- Powered entirely by GitHub Actions, no server needed.
 
 ## Prerequisites
 
